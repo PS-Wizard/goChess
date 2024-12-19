@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GoChess</title>
+    <script src="https://unpkg.com/htmx.org@2.0.3" integrity="sha384-0895/pl2MU10Hqc6jd4RvrthNlDiE9U1tWmX7WRESftEDRosgxNsQG/Ze9YMRzHq" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js" integrity="sha384-ZvpUoO/+PpLXR1lu4jmpXWu80pZlYUAfxl5NsBMWOEPSjUn/6Z/hRTt8+pR6L4N2" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js" integrity="sha384-8Vi8VHwn3vjQ9eUHUxex3JSN/NFqUg3QbPyX8kWyb93+8AC/pPWTzj+nHtbC5bxD" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css" integrity="sha384-q94+BZtLrkL1/ohfjR8c6L+A6qzNH9R2hBLwyoAfu3i/WCvQjzL2RQJ3uNHDISdU" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/geist@1.3.1/dist/font.min.js"></script>
+    <style>
+        * {
+            margin:0;
+            padding:0;
+            font-family: 'Geist',sans-serif;
+        }
+        body {
+            height:100vh;
+            width:100vw;
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            flex-direction:column;
+            background-color:#000;
+            color:#c6c6c6;
+        } 
+
+        #submit{
+            margin:2em;
+            border:2px solid #c6c6c6;
+            padding:1em 2em 1em 2em;
+            border-radius:15px;
+            cursor:pointer;
+            transition:0.4s ease;
+        }
+        #submit:hover{
+            background-color:#fff;
+            color:#000;
+        }
+
+    </style>
+</head>
+<body>
+    <div id='myBoard' style="width:500px"></div>
+    <!--TODO:-->
+    <!--Check response, If Valid, Just Swap #response, if invalid, server returns the last state i.e lastMoved.oldPos-->
+    <!--Or, I mean server could always respnd with a chess board regardless error, so error checking is server side instead of client? but i think doing it like this is better as there wont be a chess board on each response-->
+
+    <div id="submit" hx-get="/api/" hx-trigger="click" hx-vals="js:{...getContext()}" hx-target="#response", hx-swap="innerHTML">Submit</div>
+    <h1 id="response"></h1>
+    <script>
+        var lastMoved = {
+            source: null,
+            target: null,
+            piece: null,
+            oldPos: null,
+            newPos: null
+        };
+        var config = {
+            pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png',
+            position: 'start',
+            draggable: true,
+            onDrop:onDrop,
+        }
+        var board = Chessboard('myBoard', config);
+        function onDrop(source, target, piece, newPos, oldPos) {
+            console.log('Source: ' + source)
+            console.log('Target: ' + target)
+            console.log('Piece: ' + piece)
+            console.log('New position: ' + Chessboard.objToFen(newPos))
+            console.log('Old position: ' + Chessboard.objToFen(oldPos))
+            console.log('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
+
+            lastMoved = {
+                source: source,
+                target: target,
+                piece: piece,
+                oldPos: Chessboard.objToFen(oldPos),
+                newPos: Chessboard.objToFen(newPos)
+            };
+
+        }
+
+        function getContext(){
+            return {
+                "from": lastMoved.source,
+                "to": lastMoved.target,
+                "piece": lastMoved.piece,
+                "oldState":lastMoved.oldPos,
+                "newState": lastMoved.newPos
+            }
+        }
+
+    </script>
+</body>
+</html>
+
