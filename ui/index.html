@@ -1,19 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GoChess</title>
-    <script src="https://code.jquery.com/jquery-3.6.4.min.js" crossorigin="anonymous"></script>
-    <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js" crossorigin="anonymous"></script>
-    <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css" crossorigin="anonymous">
-    
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            font-family: 'Geist', sans-serif;
-        }
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>GoChess</title>
+        <script src="https://code.jquery.com/jquery-3.6.4.min.js" crossorigin="anonymous"></script>
+        <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js" crossorigin="anonymous"></script>
+        <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css" crossorigin="anonymous">
+
+        <style>
+* {
+    margin: 0;
+    padding: 0;
+    font-family: 'Geist', sans-serif;
+}
         body {
             height: 100vh;
             width: 100vw;
@@ -37,32 +37,67 @@
             background-color: #fff;
             color: #000;
         }
-    </style>
-</head>
-<body>
-    <div id='myBoard' style="width:500px"></div>
-    <script>
-        const boardState = new Map();
+        </style>
+    </head>
+    <body>
+        <div id='myBoard' style="width:500px"></div>
+        <script>
 
-        const config = {
-            pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png',
-            position: 'start',
-            draggable: true,
-            onDrop: onDrop
-        };
+            const room = prompt("Enter room name:", "default");
+            const ws = new WebSocket(`ws://localhost:8080/ws?room=${room}`);
 
-        const board = Chessboard('myBoard', config);
+            const boardState = new Map();
 
-        function onDrop(source, target, piece, newPos, oldPos) {
-            boardState.set('source', source);
-            boardState.set('target', target);
-            boardState.set('piece', piece);
-            boardState.set('oldPos', Chessboard.objToFen(oldPos));
-            boardState.set('newPos', Chessboard.objToFen(newPos));
+            let currentPosition = 'start'; 
 
-            console.log('Board State:', Object.fromEntries(boardState));
-        }
-    </script>
-</body>
+            const config = {
+                pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png',
+                position: currentPosition,
+                draggable: true,
+                onDrop: onDrop
+            };
+
+            const board = Chessboard('myBoard', config);
+
+            ws.onopen = () => {
+                console.log(`Connected to room: ${room}`);
+            };
+
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                if (data.type === "move") {
+                    console.log("Received move:", data);
+                    board.position(data.newPos); 
+                } else if (data.type === "error") {
+                    alert(data.message); 
+                } else if (data.type === "gameOver") {
+                    alert(data.message); 
+                }
+            };
+
+            ws.onclose = () => {
+                console.log("Disconnected from WebSocket!");
+            };
+
+            ws.onerror = (error) => {
+                console.error("WebSocket error:", error);
+            };
+
+            function onDrop(source, target, piece, newPos, oldPos) {
+                
+                const move = {
+                    type: "move",
+                    source,
+                    target,
+                    piece,
+                    oldPos: Chessboard.objToFen(oldPos),
+                    newPos: Chessboard.objToFen(newPos),
+                };
+
+                ws.send(JSON.stringify(move));
+                console.log("Move sent:", move);
+            }
+        </script>
+    </body>
 </html>
-
