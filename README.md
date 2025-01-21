@@ -1,6 +1,6 @@
 # Golang Chess Package:
 - [x] PGN Encoding
-- [ ] Turn Management
-- [ ] Move Validation
-- [ ] Check/mate Detection
+- [x] Turn Management
+- [x] Move Validation
+- [x] Check/mate Detection
 
